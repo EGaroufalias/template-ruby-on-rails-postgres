@@ -1,4 +1,6 @@
 class PostsController < ApplicationController
+    before_action :redirect_if_not_signed_in, only: [:new]
+
     def show
       @post = Post.find(params[:id])
     end
@@ -21,7 +23,7 @@ class PostsController < ApplicationController
       @categories = Category.where(branch: branch)
       @posts = get_posts.paginate(page: params[:page])
     end
-    
+
     def get_posts
         branch = params[:action]
         search = params[:search]
@@ -37,5 +39,33 @@ class PostsController < ApplicationController
           posts = Post.by_category(branch, category).search(search)
         else
         end
+      end
+      
+    def new
+        @branch = params[:branch]
+        @categories = Category.where(branch: @branch)
+        @post = Post.new
+      end
+
+    def create
+        @post = Post.new(post_params)
+        if @post.save 
+          redirect_to post_path(@post) 
+        else
+          redirect_to root_path
+        end
+      end
+      
+    def post_params
+        params.require(:post).permit(:content, :title, :category_id)
+                             .merge(user_id: current_user.id)
+      end
+      
+    def redirect_if_not_signed_in
+        redirect_to root_path if !user_signed_in?
+      end
+      
+    def redirect_if_signed_in
+        redirect_to root_path if user_signed_in?
       end
 end
